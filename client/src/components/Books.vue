@@ -14,6 +14,7 @@
               <th scope="col">Title</th>
               <th scope="col">Author</th>
               <th scope="col">Read?</th>
+              <th scope="col">Purchase Price</th>
               <th></th>
             </tr>
           </thead>
@@ -25,6 +26,7 @@
                 <span v-if="book.read">Yes</span>
                 <span v-else>No</span>
               </td>
+              <td>${{ book.price }}</td>
               <td>
                 <div class="btn-group" role="group">
                   <button
@@ -41,6 +43,12 @@
                     @click="onDeleteBook(book)"
                   >
                     Delete
+                  </button>
+                  <button type="button"
+                    class="btn btn-primary btn-sm"
+                    @click="purchaseBook(book.id)"
+                  >
+                    Purchase
                   </button>
                 </div>
               </td>
@@ -69,6 +77,17 @@
             required
             placeholder="Enter author"
           >
+          </b-form-input>
+        </b-form-group>
+        <b-form-group id="form-price-group"
+          label="Purchase price:"
+          label-for="form-price-input">
+          <b-form-input id="form-price-input"
+            type="number"
+            step="0.01"
+            v-model="addBookForm.price"
+            required
+            placeholder="Enter price">
           </b-form-input>
         </b-form-group>
         <b-form-group id="form-read-group">
@@ -108,6 +127,17 @@
           >
           </b-form-input>
         </b-form-group>
+        <b-form-group id="form-price-edit-group"
+          label="Purchase price:"
+          label-for="form-price-edit-input">
+          <b-form-input id="form-price-input"
+            type="number"
+            step="0.01"
+            v-model="editForm.price"
+            required
+            placeholder="Enter price">
+          </b-form-input>
+        </b-form-group>
         <b-form-group id="form-read-edit-group">
           <b-form-checkbox-group v-model="editForm.read" id="form-checks">
             <b-form-checkbox value="true">Read?</b-form-checkbox>
@@ -134,6 +164,7 @@ export default {
         title: '',
         author: '',
         read: [],
+        price: '',
       },
       message: '',
       showMessage: false,
@@ -142,7 +173,9 @@ export default {
         title: '',
         author: '',
         read: [],
+        price: '',
       },
+      stripe: null,
     };
   },
   components: {
@@ -158,7 +191,7 @@ export default {
         })
         .catch((error) => {
           // eslint-disable-next-line
-          console.error(error);
+            console.error(error);
         });
     },
     addBook(payload) {
@@ -172,14 +205,16 @@ export default {
         })
         .catch((error) => {
           // eslint-disable-next-line
-          console.log(error);
+            console.log(error);
           this.getBooks();
         });
     },
     initForm() {
+      // To clear out the values after the end user submits the form or clicks reset
       this.addBookForm.title = '';
       this.addBookForm.author = '';
       this.addBookForm.read = [];
+      this.addBookForm.read = '';
       this.editForm.id = '';
       this.editForm.title = '';
       this.editForm.author = '';
@@ -194,6 +229,7 @@ export default {
         title: this.addBookForm.title,
         author: this.addBookForm.author,
         read, // property shorthand
+        price: this.addBookForm.price,
       };
       this.addBook(payload);
       this.initForm();
@@ -215,6 +251,7 @@ export default {
         title: this.editForm.title,
         author: this.editForm.author,
         read,
+        price: this.editForm.price,
       };
       this.updateBook(payload, this.editForm.id);
     },
@@ -229,7 +266,7 @@ export default {
         })
         .catch((error) => {
           // eslint-disable-next-line
-          console.error(error);
+            console.error(error);
           this.getBooks();
         });
     },
@@ -250,16 +287,44 @@ export default {
         })
         .catch((error) => {
           // eslint-disable-next-line
-          console.error(error);
+            console.error(error);
           this.getBooks();
         });
     },
     onDeleteBook(book) {
       this.removeBook(book.id);
     },
+    purchaseBook(bookId) {
+      // Get Checkout Session ID
+      fetch('http://localhost:5000/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ book_id: bookId }),
+      })
+        .then((result) => result.json())
+        .then((data) => {
+          console.log(data);
+          // Redirect to Stripe Checkout
+          return this.stripe.redirectToCheckout({ sessionId: data.sessionId });
+        })
+        .then((res) => {
+          console.log(res);
+        });
+    },
+    getStripePublishableKey() {
+      fetch('http://localhost:5000/config')
+        .then((result) => result.json())
+        .then((data) => {
+          // Initialize Stripe.js
+          this.stripe = Stripe(data.publicKey); // eslint-disable-line no-undef
+        });
+    },
   },
   created() {
     this.getBooks();
+    this.getStripePublishableKey();
   },
 };
 </script>
