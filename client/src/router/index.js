@@ -1,6 +1,8 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 import Books from '../components/Books.vue';
+import OrderSuccess from '../components/OrderSuccess.vue';
+import OrderCanceled from '../components/OrderCanceled.vue';
 import Ping from '../components/Ping.vue';
 
 Vue.use(Router);
@@ -19,6 +21,16 @@ export default new Router({
       path: '/ping',
       name: 'Ping',
       component: Ping,
+    },
+    {
+      path: '/success',
+      name: 'OrderSuccess',
+      component: OrderSuccess,
+    },
+    {
+      path: '/canceled',
+      name: 'OrderCanceled',
+      component: OrderCanceled,
     },
   ],
 });
